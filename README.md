@@ -1,14 +1,12 @@
 # Student Study Planner CI/CD
 
-This project is a full-stack Student Study Planner web application created for demonstrating Dockerization, Docker Compose orchestration, Kubernetes deployment configuration and a CI pipeline with GitHub Actions.
-
-The purpose of the project is to show how a web application can be containerized, started locally with Docker Compose, prepared for deployment in Kubernetes and automatically built through a CI pipeline.
+This project is a full-stack Student Study Planner web application created for demonstrating Dockerization, local orchestration with Docker Compose, Kubernetes deployment configuration and CI with GitHub Actions.
 
 ## Application Structure
 
-The application consists of three main services:
+The application consists of three main parts:
 
-* **Frontend** - user interface for the Student Study Planner application
+* **Frontend** - user interface of the application
 * **Backend** - Node.js/Express API server
 * **Database** - PostgreSQL database
 
@@ -23,178 +21,94 @@ The application consists of three main services:
 * Kubernetes
 * Ingress
 
-## Docker
+## Docker and Docker Compose
 
-The application is dockerized using separate Dockerfiles for the frontend and backend services.
+The application is dockerized using separate containers for the frontend, backend and database.
 
-Docker is used to package the application services into containers, so the application can run in the same way on different environments.
+Docker Compose is used to start all services locally.
 
-## Docker Compose
-
-Docker Compose is used for local orchestration of the application.
-
-It starts the frontend, backend and PostgreSQL database together as separate containers.
-
-### Start the application
-
-Run the following command from the root directory of the project:
+To build and start the application, run:
 
 ```sh
 docker compose up --build
 ```
 
-This command builds and starts all services:
-
-* frontend
-* backend
-* database
-
-### Check running containers
+To check the running containers, run:
 
 ```sh
 docker compose ps
 ```
 
-Expected containers:
+Expected services:
+
+* frontend
+* backend
+* database
+
+The frontend is available locally through the configured frontend port, while the backend can be checked through its health endpoint:
 
 ```text
-study-planner-frontend
-study-planner-backend
-study-planner-db
+/health
 ```
 
-The expected result is that all containers have the status `Up`.
-
-### Application URLs
-
-Frontend:
-
-```text
-http://localhost:3000
-```
-
-Backend health check:
-
-```text
-http://localhost:5000/health
-```
-
-Database:
-
-```text
-localhost:5432
-```
-
-The backend health check endpoint returns:
-
-```json
-{
-  "status": "Backend is running"
-}
-```
-
-This confirms that the backend service is running successfully.
-
-## Docker Images
-
-The Docker images are built for the frontend and backend services.
-
-To check the created images, run:
-
-```sh
-docker images
-```
-
-Expected images:
-
-```text
-student-study-planner-cicd-frontend
-student-study-planner-cicd-backend
-postgres:16
-```
+The health endpoint returns a simple response confirming that the backend service is running.
 
 ## GitHub Actions CI Pipeline
 
-The project uses GitHub Actions for the CI pipeline.
+The project includes a GitHub Actions workflow used for continuous integration.
 
-The workflow is triggered automatically on every push to the main branch.
-
-The CI pipeline performs the Docker image build process and verifies that the application can be built successfully.
-
-Successful workflow runs in the GitHub Actions tab confirm that the CI pipeline works correctly.
+The workflow is triggered on push to the repository and performs the build process for the Docker images. Successful workflow runs in the GitHub Actions tab confirm that the CI pipeline is working correctly.
 
 ## Kubernetes
 
-The project contains Kubernetes manifests for running the application in a Kubernetes environment.
+The project contains Kubernetes manifests for deploying the application in a Kubernetes environment.
 
-Kubernetes is used to define how the frontend, backend and database services would be deployed inside a cluster.
+The Kubernetes configuration includes resources for:
 
-The Kubernetes configuration includes:
+* namespace
+* configuration values
+* secrets
+* database storage
+* frontend deployment and service
+* backend deployment and service
+* database deployment/stateful configuration and service
+* ingress configuration
 
-* Namespace
-* ConfigMaps
-* Secrets
-* PersistentVolumeClaim for the database
-* PostgreSQL database configuration
-* Backend deployment and service
-* Frontend deployment and service
-* Ingress configuration
-
-### Apply Kubernetes manifests
-
-Run the following command from the root directory of the project:
+To apply the Kubernetes manifests, run:
 
 ```sh
 kubectl apply -f k8s/
 ```
 
-### Check Kubernetes resources
-
-Check pods:
+To check the deployed resources, run:
 
 ```sh
 kubectl get pods -n study-planner
-```
-
-Check services:
-
-```sh
 kubectl get svc -n study-planner
-```
-
-Check ingress:
-
-```sh
 kubectl get ingress -n study-planner
 ```
 
 ## Ingress
 
-The project includes an Ingress manifest.
+The project includes an Ingress resource for exposing the frontend application through an HTTP route.
 
-Ingress is used to expose the frontend service outside the Kubernetes cluster and make the application accessible through a browser.
+The Ingress resource defines routing rules that forward external HTTP requests to the frontend service inside the Kubernetes cluster.
 
-Before testing Ingress, an Ingress controller must be installed and running in the cluster.
-
-The frontend service is exposed through Ingress, while the backend and database services are used internally by the application.
+In the local Kubernetes environment, the application is accessed through the configured Ingress controller address and port.
 
 ## Project Verification
 
-The project was tested with the following checks:
+The project was verified by checking that:
 
-1. Docker Compose successfully starts all services.
-2. The frontend container runs on port 3000.
-3. The backend container runs on port 5000.
-4. The PostgreSQL database container runs on port 5432.
-5. The backend `/health` endpoint returns a successful response.
-6. Docker images for frontend and backend are created successfully.
-7. GitHub Actions workflow runs successfully after push to GitHub.
-8. Kubernetes manifests are prepared for frontend, backend, database and Ingress configuration.
-
-These checks confirm that the Docker, Docker Compose, Kubernetes configuration and CI pipeline parts of the project are working properly.
+* Docker Compose starts all required services successfully
+* frontend, backend and database containers are running
+* backend health endpoint returns a successful response
+* Docker images are built successfully
+* Kubernetes manifests are applied successfully
+* Kubernetes pods and services are running
+* Ingress resource is created and routes traffic to the frontend service
+* GitHub Actions workflow runs successfully after pushing changes to GitHub
 
 ## Summary
 
-This project demonstrates a basic CI/CD workflow for a full-stack web application.
-
-The application is containerized with Docker, orchestrated locally with Docker Compose, prepared for Kubernetes deployment using manifests and automatically built through GitHub Actions.
+This project demonstrates a basic CI workflow for a full-stack web application. The application is containerized with Docker, orchestrated locally with Docker Compose, prepared for Kubernetes deployment using manifests and automatically built through GitHub Actions.
