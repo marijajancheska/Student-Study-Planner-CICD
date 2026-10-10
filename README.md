@@ -112,3 +112,7 @@ The project was verified by checking that:
 ## Summary
 
 This project demonstrates a basic CI workflow for a full-stack web application. The application is containerized with Docker, orchestrated locally with Docker Compose, prepared for Kubernetes deployment using manifests and automatically built through GitHub Actions.
+
+## CI Pipeline Verification
+
+GitHub Actions automatically builds and pushes the frontend and backend Docker images to DockerHub on every push to the main branch.
