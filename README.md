@@ -1,118 +1,138 @@
-# Student Study Planner CI/CD
+# Student Study Planner
 
-This project is a full-stack Student Study Planner web application created for demonstrating Dockerization, local orchestration with Docker Compose, Kubernetes deployment configuration and CI with GitHub Actions.
+A full-stack web application for organizing study tasks, subjects, and deadlines. The project also demonstrates containerization, multi-service orchestration, an automated Docker image publishing pipeline, and a local Kubernetes deployment.
 
-## Application Structure
+## Features
 
-The application consists of three main parts:
+- Create study tasks with a title, subject, and optional deadline.
+- View saved tasks and their current status.
+- Mark pending tasks as completed.
+- Persist task data in PostgreSQL.
 
-* **Frontend** - user interface of the application
-* **Backend** - Node.js/Express API server
-* **Database** - PostgreSQL database
+## Tech Stack
 
-## Technologies Used
+| Layer | Technologies |
+| --- | --- |
+| Frontend | React, Vite, Axios, CSS |
+| Backend | Node.js, Express |
+| Database | PostgreSQL 16 |
+| Containers | Docker, Docker Compose, Nginx |
+| CI | GitHub Actions, DockerHub |
+| Orchestration | Kubernetes, NGINX Ingress Controller |
 
-* Git and GitHub
-* Docker
-* Docker Compose
-* Node.js / Express
-* PostgreSQL
-* GitHub Actions
-* Kubernetes
-* Ingress
+## Architecture
 
-## Docker and Docker Compose
-
-The application is dockerized using separate containers for the frontend, backend and database.
-
-Docker Compose is used to start all services locally.
-
-To build and start the application, run:
-
-```sh
-docker compose up --build
+```text
+Browser (React frontend)
+       |
+       | HTTP requests
+       v
+Node.js / Express REST API
+       |
+       | SQL queries
+       v
+PostgreSQL database
 ```
 
-To check the running containers, run:
+Docker Compose runs the frontend, backend, and database as three services. The frontend is built with Vite and served by Nginx. PostgreSQL data is stored in a named Docker volume.
 
-```sh
+## REST API
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/health` | Check whether the backend is running |
+| GET | `/api/tasks` | Retrieve saved tasks |
+| POST | `/api/tasks` | Create a new task |
+| PATCH | `/api/tasks/:id/complete` | Mark a task as completed |
+
+A task contains a title, subject, optional deadline, and completion status.
+
+## Run Locally with Docker Compose
+
+**Requirements:** Docker Desktop with Docker Compose.
+
+From the repository root, run:
+
+```bash
+docker compose up -d --build
+```
+
+When the containers are running, use:
+
+- Frontend: http://localhost:3000
+- Backend health check: http://localhost:5000/health
+
+Check the running services:
+
+```bash
 docker compose ps
 ```
 
-Expected services:
+Stop the Compose services:
 
-* frontend
-* backend
-* database
-
-The frontend is available locally through the configured frontend port, while the backend can be checked through its health endpoint:
-
-```text
-/health
+```bash
+docker compose down
 ```
 
-The health endpoint returns a simple response confirming that the backend service is running.
+The database uses the `postgres_data` named volume so data can persist across container restarts. The provided Compose configuration uses development-only database credentials; change them before using the application outside a local development environment.
 
-## GitHub Actions CI Pipeline
+## Continuous Integration with GitHub Actions
 
-The project includes a GitHub Actions workflow used for continuous integration.
+The workflow in `.github/workflows/ci.yml` runs when changes are pushed to the `main` branch. It:
 
-The workflow is triggered on push to the repository and performs the build process for the Docker images. Successful workflow runs in the GitHub Actions tab confirm that the CI pipeline is working correctly.
+1. Checks out the source code.
+2. Authenticates to DockerHub using GitHub Actions secrets.
+3. Builds and publishes the backend Docker image.
+4. Builds and publishes the frontend Docker image.
 
-## Kubernetes
+Published images:
 
-The project contains Kubernetes manifests for deploying the application in a Kubernetes environment.
+- [Backend image](https://hub.docker.com/r/marijaaaj/study-planner-backend)
+- [Frontend image](https://hub.docker.com/r/marijaaaj/study-planner-frontend)
 
-The Kubernetes configuration includes resources for:
+[View GitHub Actions runs](https://github.com/marijajancheska/Student-Study-Planner-CICD/actions)
 
-* namespace
-* configuration values
-* secrets
-* database storage
-* frontend deployment and service
-* backend deployment and service
-* database deployment/stateful configuration and service
-* ingress configuration
+**Scope:** The pipeline automates image builds and publishing. Kubernetes deployment is configured separately and is not automatically updated by this workflow.
 
-To apply the Kubernetes manifests, run:
+## Kubernetes Deployment
 
-```sh
+The `k8s/` directory contains manifests for the `study-planner` namespace, including:
+
+- Frontend and backend Deployments and Services.
+- PostgreSQL StatefulSet with persistent volume storage and a database Service.
+- ConfigMap and Secret resources for application configuration.
+- An Ingress resource with the host `study-planner.local`.
+
+The manifests were used with a local Docker Desktop Kubernetes cluster. The application images in the supplied manifests are configured for local use (`imagePullPolicy: Never`); they must be available on the Kubernetes node. Applying them to a different cluster may require changing the image references and pull policy.
+
+With Kubernetes enabled and the necessary images and NGINX Ingress Controller available, apply the resources:
+
+```bash
 kubectl apply -f k8s/
 ```
 
-To check the deployed resources, run:
+Check their status:
 
-```sh
+```bash
 kubectl get pods -n study-planner
+kubectl get deployments -n study-planner
+kubectl get statefulsets -n study-planner
 kubectl get svc -n study-planner
 kubectl get ingress -n study-planner
 ```
 
-## Ingress
+For convenient local access to the frontend:
 
-The project includes an Ingress resource for exposing the frontend application through an HTTP route.
+```bash
+kubectl port-forward -n study-planner svc/frontend-service 8080:80
+```
 
-The Ingress resource defines routing rules that forward external HTTP requests to the frontend service inside the Kubernetes cluster.
+Then open http://localhost:8080.
 
-In the local Kubernetes environment, the application is accessed through the configured Ingress controller address and port.
+**Local routing note:** The current React application sends API requests to `http://localhost:5000`, so that address must be reachable from the browser for task operations to work. The current Ingress routes `/` to the frontend; it does not independently proxy `/api` to the backend. Port-forwarding the frontend alone does not make the backend accessible from a different computer.
 
-## Project Verification
+## Project Status and Scope
 
-The project was verified by checking that:
+The application was tested locally with Docker Compose and a Docker Desktop Kubernetes cluster. The frontend, backend, and PostgreSQL services were running, task data persisted after a browser refresh, the NGINX Ingress returned an HTTP 200 response for the frontend, and a new push to `main` successfully triggered GitHub Actions to publish Docker images to DockerHub.
 
-* Docker Compose starts all required services successfully
-* frontend, backend and database containers are running
-* backend health endpoint returns a successful response
-* Docker images are built successfully
-* Kubernetes manifests are applied successfully
-* Kubernetes pods and services are running
-* Ingress resource is created and routes traffic to the frontend service
-* GitHub Actions workflow runs successfully after pushing changes to GitHub
-
-## Summary
-
-This project demonstrates a basic CI workflow for a full-stack web application. The application is containerized with Docker, orchestrated locally with Docker Compose, prepared for Kubernetes deployment using manifests and automatically built through GitHub Actions.
-
-## CI Pipeline Verification
-
-GitHub Actions automatically builds and pushes the frontend and backend Docker images to DockerHub on every push to the main branch.
+This is a learning and portfolio project focused on Docker, CI, and Kubernetes rather than a production-hosted service. Future improvements could include configurable API routing, stronger input validation, automated tests, and safer management of development credentials.
